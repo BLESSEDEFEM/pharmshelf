@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Date, DateTime, Numeric, String, text
+from sqlalchemy import CheckConstraint, Date, DateTime, Numeric, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -26,3 +26,8 @@ class Product(Base):
     
     def __repr__(self) -> str:
         return f"<Product(id={self.id}, name={self.name!r}, qty={self.quantity})>"
+    
+    __table_args__ = (
+        CheckConstraint("quantity >= 0", name="ck_products_quantity_non_negative"),
+        CheckConstraint("price >= 0", name="ck_products_price_non_negative"),
+    )
