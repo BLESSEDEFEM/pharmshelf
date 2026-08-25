@@ -80,3 +80,14 @@ def update_product(db: Session, product_id: int, fields: dict) -> Product | None
     db.commit()
     db.refresh(product)
     return product
+
+
+def delete_product(db: Session, product_id: int) -> bool:
+    """Remove a product. Returns True if it existed, False if not."""
+    product = db.get(Product, product_id)
+    if product is None:
+        return False
+
+    db.delete(product)
+    db.commit()
+    return True

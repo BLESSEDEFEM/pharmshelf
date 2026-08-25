@@ -1,4 +1,5 @@
 from tests.conftest import make_product
+from datetime import date, timedelta
 
 
 def test_create_returns_201_with_generated_values(client):
@@ -220,4 +221,84 @@ def test_combined_filters_can_correctly_return_empty(client):
 def test_empty_search_string_is_rejected(client):
     r = client.get("/products?search=")
 
+    assert r.status_code == 422
+
+
+def test_duplicate_names_are_permitted(client):
+    """A regression guard on a deliberate departure from convention."""
+    make_product(client, name="Paracetamol 500mg", quantity=30, days_out=26)
+    r = make_product(client, name="Paracetamol 500mg", quantity=10, days_out=500)
+
+    assert r.status_code == 201
+    assert len(client.get("/products").json()) == 2
+
+
+def test_quantity_boundaries(client):
+    assert make_product(client, quantity=1).status_code == 201
+    assert make_product(client, quantity=0).status_code == 201      # VALID
+    assert make_product(client, quantity=-1).status_code == 422
+    
+
+def test_delete_returns_204_with_no_body(client):
+    pid = make_product(client).json()["id"]
+
+    r = client.delete(f"/products/{pid}")
+
+    assert r.status_code == 204
+    assert r.content == b""                    # genuinely empty
+
+
+def test_delete_twice_returns_404_the_second_time(client):
+    pid = make_product(client).json()["id"]
+
+    assert client.delete(f"/products/{pid}").status_code == 204
+    assert client.delete(f"/products/{pid}").status_code == 404
+
+
+def test_delete_missing_product_returns_404_not_500(client):
+    assert client.delete("/products/999").status_code == 404
+
+
+def test_deleted_product_is_gone_from_the_list(client):
+    pid = make_product(client).json()["id"]
+    client.delete(f"/products/{pid}")
+
+    assert client.get("/products").json() == []
+
+
+def test_client_cannot_set_the_id(client):
+    r = client.post("/products", json={
+        "id": 999,
+        "name": "Paracetamol 500mg",
+        "price": "250.00",
+        "expiry_date": str(date.today() + timedelta(days=30)),
+    })
+
+    assert r.status_code == 422        # because extra="forbid"
+
+
+def test_client_cannot_set_server_timestamps(client):
+    pid = make_product(client).json()["id"]
+
+    r = client.patch(f"/products/{pid}", json={"created_at": "2020-01-01T00:00:00Z"})
+
+    assert r.status_code == 422
+
+
+def test_name_too_long_is_rejected(client):
+    r = client.post("/products", json={
+        "name": "x" * 300,
+        "price": "250.00",
+        "expiry_date": str(date.today() + timedelta(days=30)),
+    })
+    assert r.status_code == 422
+
+
+def test_whitespace_only_name_is_rejected(client):
+    """Proves the trim runs BEFORE the length check."""
+    r = client.post("/products", json={
+        "name": "   ",
+        "price": "250.00",
+        "expiry_date": str(date.today() + timedelta(days=30)),
+    })
     assert r.status_code == 422

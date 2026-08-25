@@ -3,7 +3,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from app.config import settings
-from app.crud import create_product, get_product, list_expiring_soon, list_products, update_product
+from app.crud import create_product, get_product, list_expiring_soon, list_products, update_product, delete_product
 from app.database import get_db
 from app.schemas import ProductCreate, ProductRead, ProductUpdate, to_read
 
@@ -88,3 +88,13 @@ def update(
             detail="Product not found",
         )
     return to_read(product, today)
+
+
+@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove(product_id: int, db: Session = Depends(get_db)) -> None:
+    """Remove a product from the shelf."""
+    if not delete_product(db, product_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found",
+        )
