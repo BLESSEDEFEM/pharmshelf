@@ -49,3 +49,19 @@ def list_expiring_soon(db: Session, *, days: int, today: date) -> list[Product]:
 def get_product(db: Session, product_id: int) -> Product | None:
     """Fetch one product by id. Returns None if it does not exist."""
     return db.get(Product, product_id)
+
+def update_product(db: Session, product_id: int, fields: dict) -> Product | None:
+    """Apply the given fields to a product. Returns None if it does not exist.
+
+    `fields` must contain ONLY the keys the caller intends to change.
+    """
+    product = db.get(Product, product_id)
+    if product is None:
+        return None
+    
+    for key, value in fields.items():
+        setattr(product, key, value)
+        
+    db.commit()
+    db.refresh(product)
+    return product

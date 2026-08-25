@@ -4,3 +4,4 @@ from app.schemas.product import (  # noqa: F401
     ProductUpdate,
     to_read,
 )
+

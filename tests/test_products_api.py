@@ -124,3 +124,41 @@ def test_expiring_soon_is_still_reachable(client):
     r = client.get("/products/expiring-soon?days=30")
 
     assert r.status_code == 200      # NOT 422
+    
+    
+def test_patch_leaves_unsent_fields_alone(client):
+    """THE test. The last two assertions are the real ones."""
+    created = make_product(
+        client, name="Paracetamol 500mg", quantity=40, price="250.00", days_out=26
+    ).json()
+
+    r = client.patch(f"/products/{created['id']}", json={"quantity": 38})
+    assert r.status_code == 200
+
+    after = client.get(f"/products/{created['id']}").json()
+    assert after["quantity"] == 38                      # passes WITH the bug
+    assert after["name"] == "Paracetamol 500mg"         # THE TEST
+    assert after["price"] == "250.00"                   # THE TEST
+
+
+def test_patch_missing_product_returns_404(client):
+    r = client.patch("/products/999", json={"quantity": 5})
+
+    assert r.status_code == 404
+
+
+def test_patch_rejects_a_negative_quantity(client):
+    created = make_product(client).json()
+
+    r = client.patch(f"/products/{created['id']}", json={"quantity": -5})
+
+    assert r.status_code == 422
+
+
+def test_patch_rejects_an_undeclared_field(client):
+    """extra='forbid' is what makes setattr in crud safe."""
+    created = make_product(client).json()
+
+    r = client.patch(f"/products/{created['id']}", json={"quantitiy": 38})
+
+    assert r.status_code == 422

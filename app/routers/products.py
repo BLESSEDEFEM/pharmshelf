@@ -3,9 +3,9 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from app.config import settings
-from app.crud import create_product, get_product, list_expiring_soon, list_products
+from app.crud import create_product, get_product, list_expiring_soon, list_products, update_product
 from app.database import get_db
-from app.schemas import ProductCreate, ProductRead, to_read
+from app.schemas import ProductCreate, ProductRead, ProductUpdate, to_read
 
 router = APIRouter(
     prefix="/products",

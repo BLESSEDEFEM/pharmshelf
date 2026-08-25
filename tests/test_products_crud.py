@@ -24,7 +24,7 @@ def test_crud_layer_works_without_any_http(db_session):
     assert products[0].price == Decimal("1800.00")   # still exact
     
 def test_database_refuses_a_negative_quantity(db_session):
-    """⭐ Bypasses Pydantic entirely, so it tests the DATABASE layer."""
+    """Bypasses Pydantic entirely, so it tests the DATABASE layer."""
     with pytest.raises(IntegrityError):
         create_product(
             db_session,
