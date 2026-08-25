@@ -37,7 +37,7 @@ def list_products(
     """Every product, optionally narrowed by name and by expiry status."""
     stmt = select(Product)
     if search is not None:
-        stmt = stmt.where(Product.name.iLike(f"%{search}%"))
+        stmt = stmt.where(Product.name.ilike(f"%{search}%"))
         
     if expired is True:
         stmt = stmt.where(Product.expiry_date < today)
