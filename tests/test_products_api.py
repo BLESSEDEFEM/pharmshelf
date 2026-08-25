@@ -95,3 +95,32 @@ def test_days_parameter_is_bounded(client):
 
     assert r_zero.status_code == 422
     assert r_huge.status_code == 422
+    
+    
+def test_get_one_returns_the_product(client):
+    created = make_product(client, name="Paracetamol 500mg").json()
+
+    r = client.get(f"/products/{created['id']}")
+
+    assert r.status_code == 200
+    assert r.json()["name"] == "Paracetamol 500mg"
+
+
+def test_get_missing_product_returns_404_not_500(client):
+    r = client.get("/products/999")
+
+    assert r.status_code == 404
+    assert r.json()["detail"] == "Product not found"
+
+
+def test_non_integer_id_returns_422(client):
+    r = client.get("/products/abc")
+
+    assert r.status_code == 422
+
+
+def test_expiring_soon_is_still_reachable(client):
+    """The route-order regression guard. Now it has something to guard against."""
+    r = client.get("/products/expiring-soon?days=30")
+
+    assert r.status_code == 200      # NOT 422

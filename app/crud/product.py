@@ -42,6 +42,10 @@ def list_expiring_soon(db: Session, *, days: int, today: date) -> list[Product]:
         select(Product)
         .where(Product.expiry_date >= today)
         .where(Product.expiry_date <= window_end)
-        .order_by(Product.expiry_date.desc())
+        .order_by(Product.expiry_date)
     )
     return list(db.execute(stmt).scalars().all())
+
+def get_product(db: Session, product_id: int) -> Product | None:
+    """Fetch one product by id. Returns None if it does not exist."""
+    return db.get(Product, product_id)
