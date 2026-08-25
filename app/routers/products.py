@@ -57,3 +57,23 @@ def get_one(product_id: int, db: Session = Depends(get_db)) -> ProductRead:
             detail="Product not found",
         )
     return to_read(product, today)
+
+@router.patch("/{product_id}", response_model=ProductRead)
+def update(
+    product_id: int,
+    data: ProductUpdate,
+    db: Session = Depends(get_db),
+) -> ProductRead:
+    """Change only the fields that were sent."""
+    today = date.today()
+    product = update_product(
+        db,
+        product_id,
+        data.model_dump(exclude_unset=True),
+    )
+    if product is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found",
+        )
+    return to_read(product, today)
