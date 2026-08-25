@@ -27,10 +27,25 @@ def create_product(
     db.refresh(product)
     return product
 
-def list_products(db: Session) -> list[Product]:
-    """Return every product, ordered by name."""
-    stmt = select(Product).order_by(Product.name)
-    return list(db.execute(stmt).scalars().all())
+def list_products(
+    db: Session,
+    *,
+    today: date,
+    search: str | None = None,
+    expired: bool | None = None,
+    ) -> list[Product]:
+    """Every product, optionally narrowed by name and by expiry status."""
+    stmt = select(Product)
+    if search is not None:
+        stmt = stmt.where(Product.name.iLike(f"%{search}%"))
+        
+    if expired is True:
+        stmt = stmt.where(Product.expiry_date < today)
+    elif expired is False:
+        stmt = stmt.where(Product.expiry_date >= today)
+        
+    return list(db.execute(stmt.order_by(Product.name)).scalars().all())
+
 
 def list_expiring_soon(db: Session, *, days: int, today: date) -> list[Product]:
     """Products expiring within `days` of `today`, soonest first.

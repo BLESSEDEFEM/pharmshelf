@@ -162,3 +162,62 @@ def test_patch_rejects_an_undeclared_field(client):
     r = client.patch(f"/products/{created['id']}", json={"quantitiy": 38})
 
     assert r.status_code == 422
+
+
+def _two_products(client):
+    """Paracetamol: matches 'para', not expired.
+       Ibuprofen: expired, does not match 'para'."""
+    make_product(client, name="Paracetamol 500mg", days_out=26)
+    make_product(client, name="Ibuprofen 400mg", days_out=-16)
+
+
+def test_no_filters_returns_everything(client):
+    _two_products(client)
+
+    names = [p["name"] for p in client.get("/products").json()]
+
+    assert sorted(names) == ["Ibuprofen 400mg", "Paracetamol 500mg"]
+
+
+def test_search_matches_anywhere_and_ignores_case(client):
+    _two_products(client)
+    make_product(client, name="Extra-Strength PARACETAMOL", days_out=40)
+
+    names = [p["name"] for p in client.get("/products?search=para").json()]
+
+    assert "Paracetamol 500mg" in names
+    assert "Extra-Strength PARACETAMOL" in names     # anywhere, and case-insensitive
+    assert "Ibuprofen 400mg" not in names
+
+
+def test_expired_true_returns_only_expired(client):
+    _two_products(client)
+
+    names = [p["name"] for p in client.get("/products?expired=true").json()]
+
+    assert names == ["Ibuprofen 400mg"]
+
+
+def test_expired_false_filters_rather_than_ignoring(client):
+    """The `if expired:` trap. This is the ONLY test that catches it."""
+    _two_products(client)
+
+    names = [p["name"] for p in client.get("/products?expired=false").json()]
+
+    assert names == ["Paracetamol 500mg"]           # NOT both
+
+
+def test_combined_filters_can_correctly_return_empty(client):
+    """Only meaningful alongside the three tests above."""
+    _two_products(client)
+
+    r = client.get("/products?search=para&expired=true")
+
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_empty_search_string_is_rejected(client):
+    r = client.get("/products?search=")
+
+    assert r.status_code == 422

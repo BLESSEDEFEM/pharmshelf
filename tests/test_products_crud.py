@@ -17,7 +17,7 @@ def test_crud_layer_works_without_any_http(db_session):
         expiry_date=date(2026, 8, 20),
     )
 
-    products = list_products(db_session)
+    products = list_products(db_session, today=date(2026, 8, 15))
 
     assert len(products) == 1
     assert products[0].name == "Amoxicillin 250mg"

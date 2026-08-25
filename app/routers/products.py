@@ -22,11 +22,21 @@ def create_user(data: ProductCreate, db: Session = Depends(get_db)) -> ProductRe
 
 @router.get("", response_model=list[ProductRead])
 def list_all(
+    search: str | None = Query(
+        default=None,
+        min_length=1,
+        max_length=200,
+        description="Case-insensitive match anywhere in the product name.",
+    ),
+    expired: bool | None = Query(
+        default=None,
+        description="true = expired only. false = not expired only. Omit for all.",
+    ),
     db: Session = Depends(get_db)
 ) -> list[ProductRead]:
-    """List every product on the shelf."""
+    """List the shelf, optionally filtered."""
     today = date.today()
-    products = list_products(db)
+    products = list_products(db, today=today, search=search, expired=expired)
     return [to_read(p, today) for p in products]
 
 
@@ -57,6 +67,7 @@ def get_one(product_id: int, db: Session = Depends(get_db)) -> ProductRead:
             detail="Product not found",
         )
     return to_read(product, today)
+
 
 @router.patch("/{product_id}", response_model=ProductRead)
 def update(
