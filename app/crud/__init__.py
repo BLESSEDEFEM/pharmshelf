@@ -1,1 +1,1 @@
-from app.crud.product import create_product, list_products  # noqa: F401
+from app.crud.product import create_product, list_expiring_soon, list_products  # noqa: F401

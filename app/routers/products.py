@@ -1,9 +1,9 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
-
-from app.crud import create_product, list_products
+from app.config import settings
+from app.crud import create_product, list_expiring_soon, list_products
 from app.database import get_db
 from app.schemas import ProductCreate, ProductRead, to_read
 
@@ -27,4 +27,19 @@ def list_all(
     """List every product on the shelf."""
     today = date.today()
     products = list_products(db)
+    return [to_read(p, today) for p in products]
+
+@router.get("/expiring-soon", response_model=list[ProductRead])
+def expiring_soon(
+    days: int = Query(
+        default=settings.default_expiry_window_days,
+        gt=0,
+        le=settings.max_expiry_window_days,
+        description="How many days ahead to look.",
+    ),
+    db: Session = Depends(get_db),
+    ) -> list[ProductRead]:
+    """Products expiring within the next `days` days, soonest first."""
+    today = date.today()
+    products = list_expiring_soon(db, days=days, today=today)
     return [to_read(p, today) for p in products]
